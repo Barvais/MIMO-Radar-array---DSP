@@ -1,3 +1,7 @@
+%Performing the Doppler Range FFT, with opption to print results.
+%TR - Post Range FFT Matrix.
+%R_max - Maximum range as calculated.
+%Print - Prints results if recives 1.
 function tr = DopplerRange(TR,R_max,Print)
     
     r1 = linspace(0,R_max,length(TR));

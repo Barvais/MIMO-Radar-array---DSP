@@ -2,8 +2,10 @@ clc
 clear
 close all
 
+%Define constants and importing raw data.
 c = physconst('lightspeed');
 BW = 2e9;
+
 MagTX1=load('MagsTX1.tab');
 PhaseTX1=load('PhasesTX1.tab');
 
@@ -16,6 +18,7 @@ PhaseTX3=load('PhasesTX3.tab');
 MagTX4=load('MagsTX4.tab');
 PhaseTX4=load('PhasesTX4.tab');
 
+%Extracting relevant data for processing.
 TX1RX123=MagTX1(:,2:end).*exp(j*PhaseTX1(:,2:end));
 TX2RX123=MagTX2(:,2:end).*exp(j*PhaseTX2(:,2:end));
 TX3RX123=MagTX3(:,2:end).*exp(j*PhaseTX3(:,2:end));
@@ -45,6 +48,7 @@ R_max=(N-1)*Delta;
 r=linspace(0,R_max,N*10);
 rA=linspace(-pi/2,pi/2,12);
 
+%Performing inverse FFT to extract the range from the S(TX,RX).
 T1R1 = ifft(TX1RX1,N*10);
 T1R2 = ifft(TX1RX2,N*10);
 T1R3 = ifft(TX1RX3,N*10);
@@ -61,6 +65,7 @@ T4R1 = ifft(TX4RX1,N*10);
 T4R2 = ifft(TX4RX2,N*10);
 T4R3 = ifft(TX4RX3,N*10);
 
+%Printing range plot in dB.
 figure 
 plot(r,10*log10(abs(T1R1)));
 xlabel("Range [m]");
@@ -68,6 +73,8 @@ ylabel("P [dBm]");
 title("Range estimation");
 grid
 
+%Aranging the range data from the range calculation to calculate the
+%Doppler range FFT.
 T1R1Ex = [];
 T1R2Ex = [];
 T1R3Ex = [];
@@ -95,7 +102,7 @@ for(i = 1:32)
     T4R2Ex = horzcat(T4R2Ex,T4R2);
     T4R3Ex = horzcat(T4R3Ex,T4R3);
 end
-%% 
+%% Calculating and ploting the Doppler Range plot.
 
 T(:,:,1) = DopplerRange(T1R1Ex,R_max,1);
 T(:,:,2) = DopplerRange(T1R2Ex,R_max,0);
@@ -116,6 +123,7 @@ T(:,:,12) = DopplerRange(T4R3Ex,R_max,0);
 
 %% 
 
+%Finding hotspots in the previously calculated Doppler ranger
 t1 = T(:,:,1);
 [row, col] = find(ismember(t1, max(t1(:))));
 
@@ -125,6 +133,7 @@ thr2 = max(widths)*2;
 [pks,locs] = findpeaks(abs(T(:,col,1)),'MinPeakProminence',thr1, ...
     'MinPeakDistance',thr2);
 
+%For each hotspot we found we calculate the angle FFT. 
 for i = 1:length(locs)
     t1=[T(locs(i),col,1) T(locs(i),col,2) T(locs(i),col,3) ...
         T(locs(i),col,4) T(locs(i),col,5) T(locs(i),col,6) ...
@@ -137,10 +146,6 @@ for i = 1:length(locs)
     angleFFT = 10*log10(abs(fftshift(fft(t1,Na))));
 
     rA = linspace(-pi/2,pi/2,Na);
-%     [~,~,widths,proms] = findpeaks(angleFFT);
-%     thr1 = (sum(mink(proms,1)))*100;
-%     thr2 = max(widths)*0.1;
-%     [~,locsAng] = findpeaks(angleFFT,'MinPeakProminence',thr1);
     [~,locsAng] = find(ismember(angleFFT, maxk(angleFFT(:),2)));
     anglesRad = rA(locsAng);
     anglesDeg = [];
@@ -148,6 +153,7 @@ for i = 1:length(locs)
        anglesDeg = cat(2,anglesDeg,rad2deg(asin(j/pi)));
     end
 
+    %Plot the angle FFT.
     hold on
     plot(rA,angleFFT)
     scatter(rA(locsAng),angleFFT(locsAng));
